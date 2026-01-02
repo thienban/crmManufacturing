@@ -1,5 +1,6 @@
 'use client'
 
+import Link from 'next/link'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { CreateOrderSheet } from '@/components/production/CreateOrderSheet'
@@ -55,10 +56,21 @@ export default function ProductionPage() {
                                 <TableBody>
                                     {orders?.map((order: any) => (
                                         <TableRow key={order.id}>
-                                            <TableCell className="font-medium">{order.project?.title || 'Unknown Project'}</TableCell>
-                                            <TableCell>{order.supplier?.name || 'Unknown Supplier'}</TableCell>
+                                            <TableCell className="font-medium">
+                                                <Link href={`/projects/${typeof order.project === 'object' ? order.project.id : order.project}`} className="hover:underline">
+                                                    {order.project?.title || 'Unknown Project'}
+                                                </Link>
+                                            </TableCell>
                                             <TableCell>
-                                                <Badge variant="outline">{order.status}</Badge>
+                                                <Link href={`/production/suppliers/${typeof order.supplier === 'object' ? order.supplier.id : order.supplier}`} className="hover:underline">
+                                                    {order.supplier?.name || 'Unknown Supplier'}
+                                                </Link>
+                                            </TableCell>
+                                            <TableCell>
+                                                <Link href={`/production/orders/${order.id}`} className="hover:underline inline-flex items-center">
+                                                    <Badge variant="outline" className="mr-2">{order.status}</Badge>
+                                                    <span className="text-muted-foreground text-xs">View Order</span>
+                                                </Link>
                                             </TableCell>
                                             <TableCell>{order.expectedDelivery ? new Date(order.expectedDelivery).toLocaleDateString() : '-'}</TableCell>
                                         </TableRow>
@@ -95,7 +107,11 @@ export default function ProductionPage() {
                                 <TableBody>
                                     {suppliers?.map((supplier) => (
                                         <TableRow key={supplier.id}>
-                                            <TableCell className="font-medium">{supplier.name}</TableCell>
+                                            <TableCell className="font-medium">
+                                                <Link href={`/production/suppliers/${supplier.id}`} className="hover:underline">
+                                                    {supplier.name}
+                                                </Link>
+                                            </TableCell>
                                             <TableCell>{supplier.contactPerson || '-'}</TableCell>
                                             <TableCell>{supplier.email || '-'}</TableCell>
                                             <TableCell>{supplier.phone || '-'}</TableCell>

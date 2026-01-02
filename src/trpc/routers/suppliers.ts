@@ -9,6 +9,15 @@ export const suppliersRouter = router({
         return suppliers.docs
     }),
 
+    getById: publicProcedure
+        .input(z.object({ id: z.string() }))
+        .query(async ({ ctx, input }) => {
+            return await ctx.payload.findByID({
+                collection: 'suppliers',
+                id: input.id,
+            })
+        }),
+
     create: publicProcedure
         .input(
             z.object({
