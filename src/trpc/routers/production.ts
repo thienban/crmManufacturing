@@ -28,8 +28,10 @@ export const productionRouter = router({
                 status: z.enum(['draft', 'sent', 'in_production', 'shipped', 'received']),
                 expectedDelivery: z.string().optional(),
                 items: z.array(z.object({
+                    name: z.string(),
                     description: z.string().optional(),
-                    quantity: z.number().optional(),
+                    quantity: z.number().min(1),
+                    price: z.number().min(0),
                 })).optional()
             })
         )

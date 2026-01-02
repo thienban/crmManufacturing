@@ -35,12 +35,25 @@ export const ProductionOrders: CollectionConfig = {
             type: 'array',
             fields: [
                 {
+                    name: 'name',
+                    type: 'text',
+                    required: true,
+                },
+                {
                     name: 'description',
                     type: 'text',
                 },
                 {
                     name: 'quantity',
                     type: 'number',
+                    required: true,
+                    min: 1,
+                },
+                {
+                    name: 'price',
+                    type: 'number',
+                    required: true,
+                    min: 0,
                 },
             ],
         },

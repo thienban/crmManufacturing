@@ -79,15 +79,23 @@ export default function ProductionOrderDetailPage() {
                                 <Table>
                                     <TableHeader>
                                         <TableRow>
+                                            <TableHead>Name</TableHead>
                                             <TableHead>Description</TableHead>
                                             <TableHead className="text-right">Quantity</TableHead>
+                                            <TableHead className="text-right">Price</TableHead>
+                                            <TableHead className="text-right">Total</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {order.items.map((item: any, index: number) => (
                                             <TableRow key={index}>
-                                                <TableCell>{item.description || 'Item'}</TableCell>
+                                                <TableCell className="font-medium">{item.name || 'Item'}</TableCell>
+                                                <TableCell>{item.description || '-'}</TableCell>
                                                 <TableCell className="text-right">{item.quantity || 1}</TableCell>
+                                                <TableCell className="text-right">${item.price || 0}</TableCell>
+                                                <TableCell className="text-right font-medium">
+                                                    ${((item.quantity || 1) * (item.price || 0)).toLocaleString()}
+                                                </TableCell>
                                             </TableRow>
                                         ))}
                                     </TableBody>
