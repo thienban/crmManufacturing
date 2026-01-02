@@ -10,6 +10,16 @@ export const productionRouter = router({
         return orders.docs
     }),
 
+    getOrderById: publicProcedure
+        .input(z.object({ id: z.string() }))
+        .query(async ({ ctx, input }) => {
+            return await ctx.payload.findByID({
+                collection: 'production-orders',
+                id: input.id,
+                depth: 2,
+            })
+        }),
+
     create: publicProcedure
         .input(
             z.object({

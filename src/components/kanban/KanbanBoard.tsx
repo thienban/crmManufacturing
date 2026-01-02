@@ -1,9 +1,9 @@
 'use client'
 
-import { DndContext, DragEndEvent } from '@dnd-kit/core'
+import { DndContext, DragEndEvent, PointerSensor, useSensor, useSensors } from '@dnd-kit/core'
 import { trpc } from '@/trpc/client'
 import { KanbanColumn } from './KanbanColumn'
-import { LoadingSpinner } from '@/components/ui/spinner'
+import { Spinner } from '@/components/ui/spinner'
 import { toast } from 'sonner'
 
 const COLUMNS = [
@@ -40,7 +40,15 @@ export function KanbanBoard() {
         }
     }
 
-    if (isLoading) return <div>Loading...</div>
+    const sensors = useSensors(
+        useSensor(PointerSensor, {
+            activationConstraint: {
+                distance: 8,
+            },
+        })
+    )
+
+    if (isLoading) return <Spinner />
 
     // Group projects by status
     const projectsByStatus = COLUMNS.reduce((acc, col) => {
@@ -49,7 +57,9 @@ export function KanbanBoard() {
     }, {} as Record<string, any[]>)
 
     return (
-        <DndContext onDragEnd={handleDragEnd}>
+        <DndContext
+            onDragEnd={handleDragEnd}
+            sensors={sensors}>
             <div className="flex h-full gap-4 overflow-x-auto pb-4">
                 {COLUMNS.map((col) => (
                     <KanbanColumn

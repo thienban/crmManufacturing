@@ -10,6 +10,16 @@ export const projectsRouter = router({
         return projects.docs
     }),
 
+    getById: publicProcedure
+        .input(z.object({ id: z.string() }))
+        .query(async ({ ctx, input }) => {
+            return await ctx.payload.findByID({
+                collection: 'projects',
+                id: input.id,
+                depth: 2, // Check depth for related customer/production
+            })
+        }),
+
     create: publicProcedure
         .input(
             z.object({
