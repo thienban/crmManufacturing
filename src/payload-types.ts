@@ -236,8 +236,10 @@ export interface ProductionOrder {
   status?: ('draft' | 'sent' | 'in_production' | 'shipped' | 'received') | null;
   items?:
     | {
+        name: string;
         description?: string | null;
-        quantity?: number | null;
+        quantity: number;
+        price: number;
         id?: string | null;
       }[]
     | null;
@@ -412,8 +414,10 @@ export interface ProductionOrdersSelect<T extends boolean = true> {
   items?:
     | T
     | {
+        name?: T;
         description?: T;
         quantity?: T;
+        price?: T;
         id?: T;
       };
   expectedDelivery?: T;

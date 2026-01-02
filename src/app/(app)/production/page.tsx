@@ -47,37 +47,45 @@ export default function ProductionPage() {
                             <Table>
                                 <TableHeader>
                                     <TableRow>
-                                        <TableHead>Project</TableHead>
-                                        <TableHead>Supplier</TableHead>
                                         <TableHead>Status</TableHead>
+                                        <TableHead>Supplier</TableHead>
+                                        <TableHead>Total Items</TableHead>
+                                        <TableHead>Total Value</TableHead>
+                                        <TableHead>Project</TableHead>
                                         <TableHead>Expected Delivery</TableHead>
                                     </TableRow>
                                 </TableHeader>
                                 <TableBody>
-                                    {orders?.map((order: any) => (
-                                        <TableRow key={order.id}>
-                                            <TableCell className="font-medium">
-                                                <Link href={`/projects/${typeof order.project === 'object' ? order.project.id : order.project}`} className="hover:underline">
-                                                    {order.project?.title || 'Unknown Project'}
-                                                </Link>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Link href={`/production/suppliers/${typeof order.supplier === 'object' ? order.supplier.id : order.supplier}`} className="hover:underline">
-                                                    {order.supplier?.name || 'Unknown Supplier'}
-                                                </Link>
-                                            </TableCell>
-                                            <TableCell>
-                                                <Link href={`/production/orders/${order.id}`} className="hover:underline inline-flex items-center">
-                                                    <Badge variant="outline" className="mr-2">{order.status}</Badge>
-                                                    <span className="text-muted-foreground text-xs">View Order</span>
-                                                </Link>
-                                            </TableCell>
-                                            <TableCell>{order.expectedDelivery ? new Date(order.expectedDelivery).toLocaleDateString() : '-'}</TableCell>
-                                        </TableRow>
-                                    ))}
+                                    {orders?.map((order: any) => {
+                                        const totalItems = order.items?.reduce((acc: number, item: any) => acc + (item.quantity || 0), 0) || 0;
+                                        const totalValue = order.items?.reduce((acc: number, item: any) => acc + ((item.quantity || 0) * (item.price || 0)), 0) || 0;
+
+                                        return (
+                                            <TableRow key={order.id}>
+                                                <TableCell className="font-medium">
+                                                    <Link href={`/production/orders/${order.id}`} className="hover:underline inline-flex items-center">
+                                                        <Badge variant="outline" className="mr-2">{order.status}</Badge>
+                                                    </Link>
+                                                </TableCell>
+                                                <TableCell>
+                                                    <Link href={`/production/suppliers/${typeof order.supplier === 'object' ? order.supplier.id : order.supplier}`} className="hover:underline">
+                                                        {order.supplier?.name || 'Unknown Supplier'}
+                                                    </Link>
+                                                </TableCell>
+                                                <TableCell>{totalItems}</TableCell>
+                                                <TableCell>${totalValue.toLocaleString()}</TableCell>
+                                                <TableCell>
+                                                    <Link href={`/projects/${typeof order.project === 'object' ? order.project.id : order.project}`} className="hover:underline">
+                                                        {order.project?.title || 'Unknown Project'}
+                                                    </Link>
+                                                </TableCell>
+                                                <TableCell>{order.expectedDelivery ? new Date(order.expectedDelivery).toLocaleDateString() : '-'}</TableCell>
+                                            </TableRow>
+                                        )
+                                    })}
                                     {orders?.length === 0 && (
                                         <TableRow>
-                                            <TableCell colSpan={4} className="text-center">No orders found.</TableCell>
+                                            <TableCell colSpan={6} className="text-center">No orders found.</TableCell>
                                         </TableRow>
                                     )}
                                 </TableBody>
