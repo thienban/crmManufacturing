@@ -72,6 +72,7 @@ export interface Config {
     projects: Project;
     suppliers: Supplier;
     'production-orders': ProductionOrder;
+    inventory: Inventory;
     'payload-kv': PayloadKv;
     'payload-locked-documents': PayloadLockedDocument;
     'payload-preferences': PayloadPreference;
@@ -84,6 +85,7 @@ export interface Config {
     projects: ProjectsSelect<false> | ProjectsSelect<true>;
     suppliers: SuppliersSelect<false> | SuppliersSelect<true>;
     'production-orders': ProductionOrdersSelect<false> | ProductionOrdersSelect<true>;
+    inventory: InventorySelect<false> | InventorySelect<true>;
     'payload-kv': PayloadKvSelect<false> | PayloadKvSelect<true>;
     'payload-locked-documents': PayloadLockedDocumentsSelect<false> | PayloadLockedDocumentsSelect<true>;
     'payload-preferences': PayloadPreferencesSelect<false> | PayloadPreferencesSelect<true>;
@@ -249,6 +251,37 @@ export interface ProductionOrder {
 }
 /**
  * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inventory".
+ */
+export interface Inventory {
+  id: string;
+  name: string;
+  description?: string | null;
+  quantity: number;
+  unit?: string | null;
+  minQuantity?: number | null;
+  location?: string | null;
+  lastRestocked?: string | null;
+  notes?: {
+    root: {
+      type: string;
+      children: {
+        type: any;
+        version: number;
+        [k: string]: unknown;
+      }[];
+      direction: ('ltr' | 'rtl') | null;
+      format: 'left' | 'start' | 'center' | 'right' | 'end' | 'justify' | '';
+      indent: number;
+      version: number;
+    };
+    [k: string]: unknown;
+  } | null;
+  updatedAt: string;
+  createdAt: string;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
  * via the `definition` "payload-kv".
  */
 export interface PayloadKv {
@@ -290,6 +323,10 @@ export interface PayloadLockedDocument {
     | ({
         relationTo: 'production-orders';
         value: string | ProductionOrder;
+      } | null)
+    | ({
+        relationTo: 'inventory';
+        value: string | Inventory;
       } | null);
   globalSlug?: string | null;
   user: {
@@ -421,6 +458,22 @@ export interface ProductionOrdersSelect<T extends boolean = true> {
         id?: T;
       };
   expectedDelivery?: T;
+  updatedAt?: T;
+  createdAt?: T;
+}
+/**
+ * This interface was referenced by `Config`'s JSON-Schema
+ * via the `definition` "inventory_select".
+ */
+export interface InventorySelect<T extends boolean = true> {
+  name?: T;
+  description?: T;
+  quantity?: T;
+  unit?: T;
+  minQuantity?: T;
+  location?: T;
+  lastRestocked?: T;
+  notes?: T;
   updatedAt?: T;
   createdAt?: T;
 }

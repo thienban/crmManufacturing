@@ -4,6 +4,7 @@ import { projectsRouter } from './routers/projects'
 import { suppliersRouter } from './routers/suppliers'
 import { productionRouter } from './routers/production'
 import { authRouter } from './routers/auth'
+import { inventoryRouter } from './routers/inventory'
 import SuperJSON from 'superjson'
 
 export const appRouter = router({
@@ -12,6 +13,7 @@ export const appRouter = router({
     suppliers: suppliersRouter,
     production: productionRouter,
     auth: authRouter,
+    inventory: inventoryRouter,
 })
 
 export type AppRouter = typeof appRouter
