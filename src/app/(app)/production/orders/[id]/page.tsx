@@ -6,16 +6,95 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
-import { Loader2, ArrowLeft, Truck, Calendar, Box, Package } from 'lucide-react'
+import { Loader2, ArrowLeft, Truck, Calendar, Box, Package, Pencil, Plus, Trash2 } from 'lucide-react'
 import { format } from 'date-fns'
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@/components/ui/table'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useState } from 'react'
 
 export default function ProductionOrderDetailPage() {
     const params = useParams()
     const orderId = params.id as string
     const router = useRouter()
+    const [open, setOpen] = useState(false)
 
     const { data: order, isLoading } = trpc.production.getOrderById.useQuery({ id: orderId })
+    const { data: projects } = trpc.projects.getAll.useQuery()
+    const { data: suppliers } = trpc.suppliers.getAll.useQuery()
+    const utils = trpc.useUtils()
+
+    const updateMutation = trpc.production.update.useMutation({
+        onSuccess: () => {
+            utils.production.getOrderById.invalidate({ id: orderId })
+            setOpen(false)
+        },
+    })
+
+    const [formData, setFormData] = useState({
+        project: '',
+        supplier: '',
+        status: '' as 'draft' | 'sent' | 'in_production' | 'shipped' | 'received',
+        expectedDelivery: '',
+        items: [] as Array<{ name: string; description: string; quantity: number; price: number }>,
+    })
+
+    const handleEdit = () => {
+        if (order) {
+            const projectId = typeof order.project === 'object' && order.project !== null
+                ? (order.project as any).id
+                : order.project
+
+            const supplierId = typeof order.supplier === 'object' && order.supplier !== null
+                ? (order.supplier as any).id
+                : order.supplier
+
+            setFormData({
+                project: projectId || '',
+                supplier: supplierId || '',
+                status: order.status || 'draft',
+                expectedDelivery: order.expectedDelivery ? new Date(order.expectedDelivery).toISOString().split('T')[0] : '',
+                items: (order.items || []).map(item => ({
+                    name: item.name,
+                    description: item.description || '',
+                    quantity: item.quantity,
+                    price: item.price,
+                })),
+            })
+            setOpen(true)
+        }
+    }
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault()
+        updateMutation.mutate({
+            id: orderId,
+            ...formData,
+            expectedDelivery: formData.expectedDelivery || undefined,
+        })
+    }
+
+    const addItem = () => {
+        setFormData({
+            ...formData,
+            items: [...formData.items, { name: '', description: '', quantity: 1, price: 0 }],
+        })
+    }
+
+    const removeItem = (index: number) => {
+        setFormData({
+            ...formData,
+            items: formData.items.filter((_, i) => i !== index),
+        })
+    }
+
+    const updateItem = (index: number, field: string, value: any) => {
+        const newItems = [...formData.items]
+        newItems[index] = { ...newItems[index], [field]: value }
+        setFormData({ ...formData, items: newItems })
+    }
 
     if (isLoading) {
         return (
@@ -66,6 +145,165 @@ export default function ProductionOrderDetailPage() {
                         </p>
                     </div>
                 </div>
+                <Dialog open={open} onOpenChange={setOpen}>
+                    <DialogTrigger asChild>
+                        <Button onClick={handleEdit}>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Edit Order
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[700px] max-h-[90vh] overflow-y-auto">
+                        <form onSubmit={handleSubmit}>
+                            <DialogHeader>
+                                <DialogTitle>Edit Production Order</DialogTitle>
+                                <DialogDescription>
+                                    Update order information and items
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="project">Project *</Label>
+                                    <Select value={formData.project} onValueChange={(value) => setFormData({ ...formData, project: value })}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select project" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {projects?.map((project: any) => (
+                                                <SelectItem key={project.id} value={project.id}>
+                                                    {project.title}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="supplier">Supplier *</Label>
+                                    <Select value={formData.supplier} onValueChange={(value) => setFormData({ ...formData, supplier: value })}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select supplier" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {suppliers?.map((supplier: any) => (
+                                                <SelectItem key={supplier.id} value={supplier.id}>
+                                                    {supplier.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="status">Status</Label>
+                                    <Select value={formData.status} onValueChange={(value: any) => setFormData({ ...formData, status: value })}>
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="draft">Draft</SelectItem>
+                                            <SelectItem value="sent">Sent to Supplier</SelectItem>
+                                            <SelectItem value="in_production">In Production</SelectItem>
+                                            <SelectItem value="shipped">Shipped</SelectItem>
+                                            <SelectItem value="received">Received</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="expectedDelivery">Expected Delivery</Label>
+                                    <Input
+                                        id="expectedDelivery"
+                                        type="date"
+                                        value={formData.expectedDelivery}
+                                        onChange={(e) => setFormData({ ...formData, expectedDelivery: e.target.value })}
+                                    />
+                                </div>
+
+                                <div className="border-t pt-4">
+                                    <div className="flex items-center justify-between mb-3">
+                                        <Label>Order Items</Label>
+                                        <Button type="button" size="sm" variant="outline" onClick={addItem}>
+                                            <Plus className="h-4 w-4 mr-1" />
+                                            Add Item
+                                        </Button>
+                                    </div>
+                                    <div className="space-y-3">
+                                        {formData.items.map((item, index) => (
+                                            <div key={index} className="border rounded-lg p-3 space-y-2">
+                                                <div className="flex items-center justify-between">
+                                                    <span className="text-sm font-medium">Item {index + 1}</span>
+                                                    <Button
+                                                        type="button"
+                                                        size="sm"
+                                                        variant="ghost"
+                                                        onClick={() => removeItem(index)}
+                                                    >
+                                                        <Trash2 className="h-4 w-4" />
+                                                    </Button>
+                                                </div>
+                                                <div className="grid grid-cols-2 gap-2">
+                                                    <div>
+                                                        <Label className="text-xs">Name *</Label>
+                                                        <Input
+                                                            value={item.name}
+                                                            onChange={(e) => updateItem(index, 'name', e.target.value)}
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <Label className="text-xs">Description</Label>
+                                                        <Input
+                                                            value={item.description}
+                                                            onChange={(e) => updateItem(index, 'description', e.target.value)}
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <Label className="text-xs">Quantity *</Label>
+                                                        <Input
+                                                            type="number"
+                                                            min="1"
+                                                            value={item.quantity}
+                                                            onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 1)}
+                                                            required
+                                                        />
+                                                    </div>
+                                                    <div>
+                                                        <Label className="text-xs">Price *</Label>
+                                                        <Input
+                                                            type="number"
+                                                            min="0"
+                                                            step="0.01"
+                                                            value={item.price}
+                                                            onChange={(e) => updateItem(index, 'price', parseFloat(e.target.value) || 0)}
+                                                            required
+                                                        />
+                                                    </div>
+                                                </div>
+                                            </div>
+                                        ))}
+                                        {formData.items.length === 0 && (
+                                            <p className="text-sm text-muted-foreground text-center py-4">
+                                                No items added. Click &quot;Add Item&quot; to add items to this order.
+                                            </p>
+                                        )}
+                                    </div>
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                                    Cancel
+                                </Button>
+                                <Button type="submit" disabled={updateMutation.isPending}>
+                                    {updateMutation.isPending ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Saving...
+                                        </>
+                                    ) : (
+                                        'Save Changes'
+                                    )}
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </DialogContent>
+                </Dialog>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-3 gap-6">

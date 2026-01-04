@@ -53,4 +53,24 @@ export const projectsRouter = router({
                 },
             })
         }),
+
+    update: publicProcedure
+        .input(
+            z.object({
+                id: z.string(),
+                title: z.string().optional(),
+                customer: z.string().optional(),
+                status: z.enum(['lead', 'discovery', 'proposal', 'production', 'delivery', 'completed']).optional(),
+                deadline: z.string().optional(),
+                value: z.number().optional(),
+            })
+        )
+        .mutation(async ({ ctx, input }) => {
+            const { id, ...data } = input
+            return await ctx.payload.update({
+                collection: 'projects',
+                id,
+                data,
+            })
+        }),
 })

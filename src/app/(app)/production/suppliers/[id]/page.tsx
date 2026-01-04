@@ -6,13 +6,53 @@ import Link from 'next/link'
 import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Loader2, ArrowLeft, Mail, Phone, User, Package } from 'lucide-react'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { useState } from 'react'
 
 export default function SupplierDetailPage() {
     const params = useParams()
     const supplierId = params.id as string
     const router = useRouter()
+    const [open, setOpen] = useState(false)
 
     const { data: supplier, isLoading } = trpc.suppliers.getById.useQuery({ id: supplierId })
+    const utils = trpc.useUtils()
+
+    const updateMutation = trpc.suppliers.update.useMutation({
+        onSuccess: () => {
+            utils.suppliers.getById.invalidate({ id: supplierId })
+            setOpen(false)
+        },
+    })
+
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        contactPerson: '',
+        phone: '',
+    })
+
+    const handleEdit = () => {
+        if (supplier) {
+            setFormData({
+                name: supplier.name || '',
+                email: supplier.email || '',
+                contactPerson: supplier.contactPerson || '',
+                phone: supplier.phone || '',
+            })
+            setOpen(true)
+        }
+    }
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault()
+        updateMutation.mutate({
+            id: supplierId,
+            ...formData,
+        })
+    }
 
     if (isLoading) {
         return (
@@ -47,9 +87,74 @@ export default function SupplierDetailPage() {
                         <p className="text-muted-foreground">Supplier ID: {supplier.id}</p>
                     </div>
                 </div>
-                <Button variant="outline">
-                    Edit Supplier
-                </Button>
+                <Dialog open={open} onOpenChange={setOpen}>
+                    <DialogTrigger asChild>
+                        <Button onClick={handleEdit}>
+                            Edit Supplier
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[500px]">
+                        <form onSubmit={handleSubmit}>
+                            <DialogHeader>
+                                <DialogTitle>Edit Supplier</DialogTitle>
+                                <DialogDescription>
+                                    Update supplier information
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="name">Name *</Label>
+                                    <Input
+                                        id="name"
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="contactPerson">Contact Person</Label>
+                                    <Input
+                                        id="contactPerson"
+                                        value={formData.contactPerson}
+                                        onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="email">Email</Label>
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        value={formData.email}
+                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="phone">Phone</Label>
+                                    <Input
+                                        id="phone"
+                                        value={formData.phone}
+                                        onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                    />
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                                    Cancel
+                                </Button>
+                                <Button type="submit" disabled={updateMutation.isPending}>
+                                    {updateMutation.isPending ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Saving...
+                                        </>
+                                    ) : (
+                                        'Save Changes'
+                                    )}
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </DialogContent>
+                </Dialog>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">
