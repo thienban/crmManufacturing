@@ -33,4 +33,23 @@ export const suppliersRouter = router({
                 data: input,
             })
         }),
+
+    update: publicProcedure
+        .input(
+            z.object({
+                id: z.string(),
+                name: z.string().optional(),
+                email: z.string().email().optional().or(z.literal('')),
+                contactPerson: z.string().optional(),
+                phone: z.string().optional(),
+            })
+        )
+        .mutation(async ({ ctx, input }) => {
+            const { id, ...data } = input
+            return await ctx.payload.update({
+                collection: 'suppliers',
+                id,
+                data,
+            })
+        }),
 })

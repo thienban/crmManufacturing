@@ -41,4 +41,29 @@ export const productionRouter = router({
                 data: input,
             })
         }),
+
+    update: publicProcedure
+        .input(
+            z.object({
+                id: z.string(),
+                project: z.string().optional(),
+                supplier: z.string().optional(),
+                status: z.enum(['draft', 'sent', 'in_production', 'shipped', 'received']).optional(),
+                expectedDelivery: z.string().optional(),
+                items: z.array(z.object({
+                    name: z.string(),
+                    description: z.string().optional(),
+                    quantity: z.number().min(1),
+                    price: z.number().min(0),
+                })).optional()
+            })
+        )
+        .mutation(async ({ ctx, input }) => {
+            const { id, ...data } = input
+            return await ctx.payload.update({
+                collection: 'production-orders',
+                id,
+                data,
+            })
+        }),
 })
