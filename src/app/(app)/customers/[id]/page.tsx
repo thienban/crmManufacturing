@@ -8,12 +8,60 @@ import { Loader2, ArrowLeft, Pencil } from 'lucide-react'
 import Link from 'next/link'
 import { useParams } from 'next/navigation'
 import { Separator } from '@/components/ui/separator'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { Textarea } from '@/components/ui/textarea'
+import { useState } from 'react'
 
 export default function CustomerDetailPage() {
     const params = useParams()
     const customerId = params.id as string
+    const [open, setOpen] = useState(false)
 
     const { data: customer, isLoading } = trpc.customers.getById.useQuery({ id: customerId })
+    const utils = trpc.useUtils()
+
+    const updateMutation = trpc.customers.update.useMutation({
+        onSuccess: () => {
+            utils.customers.getById.invalidate({ id: customerId })
+            setOpen(false)
+        },
+    })
+
+    const [formData, setFormData] = useState({
+        name: '',
+        email: '',
+        phone: '',
+        contactPerson: '',
+        address: '',
+        status: '' as 'active' | 'inactive' | 'pending',
+        type: '' as 'customer' | 'prospect',
+    })
+
+    const handleEdit = () => {
+        if (customer) {
+            setFormData({
+                name: customer.name || '',
+                email: customer.email || '',
+                phone: customer.phone || '',
+                contactPerson: customer.contactPerson || '',
+                address: customer.address || '',
+                status: customer.status || 'active',
+                type: customer.type || 'prospect',
+            })
+            setOpen(true)
+        }
+    }
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault()
+        updateMutation.mutate({
+            id: customerId,
+            data: formData,
+        })
+    }
 
     if (isLoading) {
         return (
@@ -48,10 +96,114 @@ export default function CustomerDetailPage() {
                         <p className="text-muted-foreground">{customer.type === 'customer' ? 'Customer' : 'Prospect'}</p>
                     </div>
                 </div>
-                <Button>
-                    <Pencil className="mr-2 h-4 w-4" />
-                    Edit Customer
-                </Button>
+                <Dialog open={open} onOpenChange={setOpen}>
+                    <DialogTrigger asChild>
+                        <Button onClick={handleEdit}>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Edit Customer
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[500px]">
+                        <form onSubmit={handleSubmit}>
+                            <DialogHeader>
+                                <DialogTitle>Edit Customer</DialogTitle>
+                                <DialogDescription>
+                                    Update customer information
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="name">Company / Name *</Label>
+                                    <Input
+                                        id="name"
+                                        value={formData.name}
+                                        onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="email">Email *</Label>
+                                    <Input
+                                        id="email"
+                                        type="email"
+                                        value={formData.email}
+                                        onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="phone">Phone</Label>
+                                        <Input
+                                            id="phone"
+                                            value={formData.phone}
+                                            onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                                        />
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="contactPerson">Contact Person</Label>
+                                        <Input
+                                            id="contactPerson"
+                                            value={formData.contactPerson}
+                                            onChange={(e) => setFormData({ ...formData, contactPerson: e.target.value })}
+                                        />
+                                    </div>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="address">Address</Label>
+                                    <Textarea
+                                        id="address"
+                                        value={formData.address}
+                                        onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+                                        rows={3}
+                                    />
+                                </div>
+                                <div className="grid grid-cols-2 gap-4">
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="status">Status</Label>
+                                        <Select value={formData.status} onValueChange={(value: any) => setFormData({ ...formData, status: value })}>
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="active">Active</SelectItem>
+                                                <SelectItem value="inactive">Inactive</SelectItem>
+                                                <SelectItem value="pending">Pending</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                    <div className="grid gap-2">
+                                        <Label htmlFor="type">Type</Label>
+                                        <Select value={formData.type} onValueChange={(value: any) => setFormData({ ...formData, type: value })}>
+                                            <SelectTrigger>
+                                                <SelectValue />
+                                            </SelectTrigger>
+                                            <SelectContent>
+                                                <SelectItem value="customer">Customer</SelectItem>
+                                                <SelectItem value="prospect">Prospect</SelectItem>
+                                            </SelectContent>
+                                        </Select>
+                                    </div>
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                                    Cancel
+                                </Button>
+                                <Button type="submit" disabled={updateMutation.isPending}>
+                                    {updateMutation.isPending ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Saving...
+                                        </>
+                                    ) : (
+                                        'Save Changes'
+                                    )}
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </DialogContent>
+                </Dialog>
             </div>
 
             <div className="grid grid-cols-1 md:grid-cols-2 gap-6">

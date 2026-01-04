@@ -8,15 +8,64 @@ import { Button } from '@/components/ui/button'
 import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
-import { Loader2, ArrowLeft, Calendar, DollarSign, User, Factory } from 'lucide-react'
+import { Loader2, ArrowLeft, Calendar, DollarSign, User, Factory, Pencil } from 'lucide-react'
 import { format } from 'date-fns'
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle, DialogTrigger } from '@/components/ui/dialog'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { useState } from 'react'
 
 export default function ProjectDetailPage() {
     const params = useParams()
     const projectId = params.id as string
     const router = useRouter()
+    const [open, setOpen] = useState(false)
 
     const { data: project, isLoading } = trpc.projects.getById.useQuery({ id: projectId })
+    const { data: customers } = trpc.customers.getAll.useQuery()
+    const utils = trpc.useUtils()
+
+    const updateMutation = trpc.projects.update.useMutation({
+        onSuccess: () => {
+            utils.projects.getById.invalidate({ id: projectId })
+            setOpen(false)
+        },
+    })
+
+    const [formData, setFormData] = useState({
+        title: '',
+        customer: '',
+        status: '' as 'lead' | 'discovery' | 'proposal' | 'production' | 'delivery' | 'completed',
+        deadline: '',
+        value: 0,
+    })
+
+    const handleEdit = () => {
+        if (project) {
+            const customerId = typeof project.customer === 'object' && project.customer !== null
+                ? (project.customer as any).id
+                : project.customer
+
+            setFormData({
+                title: project.title || '',
+                customer: customerId || '',
+                status: project.status || 'lead',
+                deadline: project.deadline ? new Date(project.deadline).toISOString().split('T')[0] : '',
+                value: project.value || 0,
+            })
+            setOpen(true)
+        }
+    }
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault()
+        updateMutation.mutate({
+            id: projectId,
+            ...formData,
+            deadline: formData.deadline || undefined,
+        })
+    }
 
     if (isLoading) {
         return (
@@ -67,7 +116,99 @@ export default function ProjectDetailPage() {
                         </p>
                     </div>
                 </div>
-                {/* Actions like Edit could go here */}
+                <Dialog open={open} onOpenChange={setOpen}>
+                    <DialogTrigger asChild>
+                        <Button onClick={handleEdit}>
+                            <Pencil className="mr-2 h-4 w-4" />
+                            Edit Project
+                        </Button>
+                    </DialogTrigger>
+                    <DialogContent className="sm:max-w-[500px]">
+                        <form onSubmit={handleSubmit}>
+                            <DialogHeader>
+                                <DialogTitle>Edit Project</DialogTitle>
+                                <DialogDescription>
+                                    Update project information
+                                </DialogDescription>
+                            </DialogHeader>
+                            <div className="grid gap-4 py-4">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="title">Title *</Label>
+                                    <Input
+                                        id="title"
+                                        value={formData.title}
+                                        onChange={(e) => setFormData({ ...formData, title: e.target.value })}
+                                        required
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="customer">Customer *</Label>
+                                    <Select value={formData.customer} onValueChange={(value) => setFormData({ ...formData, customer: value })}>
+                                        <SelectTrigger>
+                                            <SelectValue placeholder="Select customer" />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            {customers?.map((customer: any) => (
+                                                <SelectItem key={customer.id} value={customer.id}>
+                                                    {customer.name}
+                                                </SelectItem>
+                                            ))}
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="status">Status</Label>
+                                    <Select value={formData.status} onValueChange={(value: any) => setFormData({ ...formData, status: value })}>
+                                        <SelectTrigger>
+                                            <SelectValue />
+                                        </SelectTrigger>
+                                        <SelectContent>
+                                            <SelectItem value="lead">Lead</SelectItem>
+                                            <SelectItem value="discovery">Discovery</SelectItem>
+                                            <SelectItem value="proposal">Proposal</SelectItem>
+                                            <SelectItem value="production">In Production</SelectItem>
+                                            <SelectItem value="delivery">Delivery</SelectItem>
+                                            <SelectItem value="completed">Completed</SelectItem>
+                                        </SelectContent>
+                                    </Select>
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="deadline">Deadline</Label>
+                                    <Input
+                                        id="deadline"
+                                        type="date"
+                                        value={formData.deadline}
+                                        onChange={(e) => setFormData({ ...formData, deadline: e.target.value })}
+                                    />
+                                </div>
+                                <div className="grid gap-2">
+                                    <Label htmlFor="value">Project Value</Label>
+                                    <Input
+                                        id="value"
+                                        type="number"
+                                        value={formData.value}
+                                        onChange={(e) => setFormData({ ...formData, value: parseFloat(e.target.value) || 0 })}
+                                    />
+                                </div>
+                            </div>
+                            <DialogFooter>
+                                <Button type="button" variant="outline" onClick={() => setOpen(false)}>
+                                    Cancel
+                                </Button>
+                                <Button type="submit" disabled={updateMutation.isPending}>
+                                    {updateMutation.isPending ? (
+                                        <>
+                                            <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                            Saving...
+                                        </>
+                                    ) : (
+                                        'Save Changes'
+                                    )}
+                                </Button>
+                            </DialogFooter>
+                        </form>
+                    </DialogContent>
+                </Dialog>
             </div>
 
             <Tabs defaultValue="overview" className="space-y-4">
