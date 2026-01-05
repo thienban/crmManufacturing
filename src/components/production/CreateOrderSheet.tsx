@@ -31,8 +31,9 @@ import {
 } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { useState } from 'react'
-import { Plus, Trash2 } from 'lucide-react'
+import { Plus } from 'lucide-react'
 import { Separator } from '@/components/ui/separator'
+import { OrderItemRow } from './OrderItemRow'
 
 const orderSchema = z.object({
     project: z.string().min(1, 'Project is required'),
@@ -54,6 +55,7 @@ export function CreateOrderSheet() {
     const utils = trpc.useUtils()
     const { data: projects } = trpc.projects.getAll.useQuery()
     const { data: suppliers } = trpc.suppliers.getAll.useQuery()
+    const { data: itemSuggestions } = trpc.inventory.getItemNames.useQuery()
 
     const form = useForm<OrderFormValues>({
         resolver: zodResolver(orderSchema),
@@ -92,7 +94,7 @@ export function CreateOrderSheet() {
                     New Order
                 </Button>
             </SheetTrigger>
-            <SheetContent className="overflow-y-auto sm:max-w-xl">
+            <SheetContent className="overflow-y-auto sm:max-w-3xl">
                 <SheetHeader>
                     <SheetTitle>New Production Order</SheetTitle>
                     <SheetDescription>
@@ -209,78 +211,13 @@ export function CreateOrderSheet() {
 
                             <div className="space-y-4">
                                 {fields.map((field, index) => (
-                                    <div key={field.id} className="grid grid-cols-12 gap-2 items-end border p-3 rounded-md">
-                                        <div className="col-span-3">
-                                            <FormField
-                                                control={form.control}
-                                                name={`items.${index}.name`}
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel className="text-xs">Name</FormLabel>
-                                                        <FormControl>
-                                                            <Input {...field} placeholder="Item Name" />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        </div>
-                                        <div className="col-span-3">
-                                            <FormField
-                                                control={form.control}
-                                                name={`items.${index}.description`}
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel className="text-xs">Desc</FormLabel>
-                                                        <FormControl>
-                                                            <Input {...field} placeholder="Description" />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        </div>
-                                        <div className="col-span-2">
-                                            <FormField
-                                                control={form.control}
-                                                name={`items.${index}.quantity`}
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel className="text-xs">Qty</FormLabel>
-                                                        <FormControl>
-                                                            <Input {...field} type="number" min="1" />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        </div>
-                                        <div className="col-span-2">
-                                            <FormField
-                                                control={form.control}
-                                                name={`items.${index}.price`}
-                                                render={({ field }) => (
-                                                    <FormItem>
-                                                        <FormLabel className="text-xs">Price</FormLabel>
-                                                        <FormControl>
-                                                            <Input {...field} type="number" min="0" step="0.01" />
-                                                        </FormControl>
-                                                        <FormMessage />
-                                                    </FormItem>
-                                                )}
-                                            />
-                                        </div>
-                                        <div className="col-span-2">
-                                            <Button
-                                                type="button"
-                                                variant="ghost"
-                                                size="icon"
-                                                onClick={() => remove(index)}
-                                            >
-                                                <Trash2 className="h-4 w-4 text-destructive" />
-                                            </Button>
-                                        </div>
-                                    </div>
+                                    <OrderItemRow
+                                        key={field.id}
+                                        index={index}
+                                        form={form}
+                                        remove={remove}
+                                        itemSuggestions={itemSuggestions}
+                                    />
                                 ))}
                             </div>
                         </div>
