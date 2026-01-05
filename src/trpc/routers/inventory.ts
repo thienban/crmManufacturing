@@ -10,6 +10,21 @@ export const inventoryRouter = router({
         return inventory.docs
     }),
 
+    getItemByName: publicProcedure
+        .input(z.object({ name: z.string() }))
+        .query(async ({ ctx, input }) => {
+            const result = await ctx.payload.find({
+                collection: 'inventory',
+                where: {
+                    name: {
+                        equals: input.name,
+                    },
+                },
+                limit: 1,
+            })
+            return result.docs[0] || null
+        }),
+
     getById: publicProcedure
         .input(z.object({ id: z.string() }))
         .query(async ({ ctx, input }) => {

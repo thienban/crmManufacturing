@@ -2,11 +2,17 @@ import { priceScope } from "@/lib/constants"
 import { cn } from "@/lib/utils"
 import { Popover, PopoverTrigger, PopoverContent } from "@/components/ui/popover"
 import { Command, CommandInput, CommandList, CommandEmpty, CommandGroup, CommandItem } from "@/components/ui/command"
-import { ChevronsUpDown, Check, Trash2 } from "lucide-react"
+import { ChevronsUpDown, Check, Trash2, Info } from "lucide-react"
 import { useState } from "react"
 import { Button } from "@/components/ui/button"
 import { FormField, FormItem, FormLabel, FormControl, FormMessage } from "@/components/ui/form"
 import { Input } from "@/components/ui/input"
+import { trpc } from "@/trpc/client"
+import {
+    HoverCard,
+    HoverCardContent,
+    HoverCardTrigger,
+} from "@/components/ui/hover-card"
 
 interface OrderItemRowProps {
     index: number
@@ -23,16 +29,50 @@ export const OrderItemRow = ({
     itemSuggestions
 }: OrderItemRowProps) => {
     const [open, setOpen] = useState(false)
+    const nameValue = form.watch(`items.${index}.name`)
+
+    const { data: itemDetails } = trpc.inventory.getItemByName.useQuery(
+        { name: nameValue },
+        { enabled: !!nameValue }
+    )
 
     return (
-        <div className="grid grid-cols-12 gap-2 items-end border p-3 rounded-md">
+        <div className="grid grid-cols-12 gap-2 items-start border p-3 rounded-md">
             <div className="col-span-3">
                 <FormField
                     control={form.control}
                     name={`items.${index}.name`}
                     render={({ field }) => (
                         <FormItem className="flex flex-col">
-                            <FormLabel className="text-xs">Name</FormLabel>
+                            <div className="flex items-center gap-2">
+                                <FormLabel className="text-xs">Name</FormLabel>
+                                {itemDetails && (
+                                    <HoverCard>
+                                        <HoverCardTrigger asChild>
+                                            <Info className="h-3 w-3 text-muted-foreground cursor-pointer" />
+                                        </HoverCardTrigger>
+                                        <HoverCardContent className="w-80">
+                                            <div className="space-y-2">
+                                                <h4 className="text-sm font-semibold">{itemDetails.name}</h4>
+                                                <div className="text-sm">
+                                                    Current Stock: <span className="font-bold">{itemDetails.quantity}</span>
+                                                    {itemDetails.unit && <span className="text-muted-foreground ml-1">{itemDetails.unit}</span>}
+                                                </div>
+                                                {itemDetails.description && (
+                                                    <p className="text-xs text-muted-foreground">
+                                                        {itemDetails.description}
+                                                    </p>
+                                                )}
+                                                {itemDetails.location && (
+                                                    <p className="text-xs text-muted-foreground">
+                                                        Location: {itemDetails.location}
+                                                    </p>
+                                                )}
+                                            </div>
+                                        </HoverCardContent>
+                                    </HoverCard>
+                                )}
+                            </div>
                             <Popover open={open} onOpenChange={setOpen}>
                                 <PopoverTrigger asChild>
                                     <FormControl>
@@ -86,6 +126,11 @@ export const OrderItemRow = ({
                                     </Command>
                                 </PopoverContent>
                             </Popover>
+                            {itemDetails && (
+                                <div className="text-[10px] text-muted-foreground mt-1">
+                                    Stock: {itemDetails.quantity} {itemDetails.unit}
+                                </div>
+                            )}
                             <FormMessage />
                         </FormItem>
                     )}
@@ -136,6 +181,7 @@ export const OrderItemRow = ({
                     )}
                 />
             </div>
+
             <div className="col-span-2">
                 <Button
                     type="button"
