@@ -4,7 +4,7 @@ import { trpc } from '@/trpc/client'
 import { useParams, useRouter } from 'next/navigation'
 import Link from 'next/link'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle, CardDescription } from '@/components/ui/card'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
 import { Badge } from '@/components/ui/badge'
 import { Loader2, ArrowLeft, Truck, Calendar, Box, Package, Pencil, Plus, Trash2 } from 'lucide-react'
 import { format } from 'date-fns'
@@ -14,6 +14,8 @@ import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
 import { useState } from 'react'
+
+import { priceScope } from '@/lib/constants'
 
 export default function ProductionOrderDetailPage() {
     const params = useParams()
@@ -285,7 +287,7 @@ export default function ProductionOrderDetailPage() {
                                                         <Input
                                                             type="number"
                                                             min="0"
-                                                            step="0.1"
+                                                            step={priceScope}
                                                             value={item.price}
                                                             onChange={(e) => {
                                                                 const val = e.target.value

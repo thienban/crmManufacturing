@@ -68,6 +68,33 @@ export const inventoryRouter = router({
         return Object.values(incomingStock)
     }),
 
+    getItemNames: publicProcedure.query(async ({ ctx }) => {
+        // Fetch inventory names
+        const inventory = await ctx.payload.find({
+            collection: 'inventory',
+            limit: 1000,
+            pagination: false,
+        })
+        const inventoryNames = inventory.docs.map((item: any) => item.name)
+
+        // Fetch production order item names
+        const orders = await ctx.payload.find({
+            collection: 'production-orders',
+            limit: 1000,
+            pagination: false,
+        })
+        const orderItemNames = orders.docs.flatMap((order: any) =>
+            (order.items || []).map((item: any) => item.name)
+        )
+
+        // Combine and deduplicate
+        const allNames = [...new Set([...inventoryNames, ...orderItemNames])]
+            .filter((name): name is string => typeof name === 'string' && name.length > 0)
+            .sort()
+
+        return allNames
+    }),
+
     create: publicProcedure
         .input(
             z.object({

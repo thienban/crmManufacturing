@@ -1,3 +1,5 @@
+import { Toaster } from 'sonner'
+
 import { TRPCProvider } from '@/trpc/Provider'
 import { Sidebar } from '@/components/Sidebar'
 
@@ -12,6 +14,7 @@ export default function AppLayout({
                 <Sidebar />
                 <main className="flex-1 overflow-y-auto p-8">
                     {children}
+                    <Toaster />
                 </main>
             </div>
         </TRPCProvider>

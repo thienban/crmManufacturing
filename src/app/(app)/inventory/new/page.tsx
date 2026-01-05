@@ -2,7 +2,7 @@
 
 import { trpc } from '@/trpc/client'
 import { Button } from '@/components/ui/button'
-import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Card, CardContent, CardHeader } from '@/components/ui/card'
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Textarea } from '@/components/ui/textarea'
@@ -10,9 +10,27 @@ import { Loader2, ArrowLeft, Package } from 'lucide-react'
 import Link from 'next/link'
 import { useRouter } from 'next/navigation'
 import { useState } from 'react'
+import { ChevronsUpDown, Check } from 'lucide-react'
+import { cn } from '@/lib/utils'
+import {
+    Command,
+    CommandEmpty,
+    CommandGroup,
+    CommandInput,
+    CommandItem,
+    CommandList,
+} from '@/components/ui/command'
+import {
+    Popover,
+    PopoverContent,
+    PopoverTrigger,
+} from '@/components/ui/popover'
 
 export default function NewInventoryItemPage() {
     const router = useRouter()
+    const { data: itemSuggestions } = trpc.inventory.getItemNames.useQuery()
+    const [openCombobox, setOpenCombobox] = useState(false)
+
     const [formData, setFormData] = useState<{
         name: string
         description: string
@@ -49,34 +67,79 @@ export default function NewInventoryItemPage() {
 
     return (
         <div className="space-y-6">
-            <div className="flex items-center space-x-4">
-                <Button variant="outline" size="icon" asChild>
-                    <Link href="/inventory">
-                        <ArrowLeft className="h-4 w-4" />
-                    </Link>
-                </Button>
-                <div>
-                    <h1 className="text-3xl font-bold tracking-tight">Add Inventory Item</h1>
-                    <p className="text-muted-foreground">Create a new item in your inventory</p>
-                </div>
-            </div>
-
             <Card>
                 <CardHeader>
-                    <CardTitle>Item Details</CardTitle>
+                    <div className="flex items-center space-x-4">
+                        <Button variant="outline" size="icon" asChild>
+                            <Link href="/inventory">
+                                <ArrowLeft className="h-4 w-4" />
+                            </Link>
+                        </Button>
+                        <div>
+                            <h1 className="text-3xl font-bold tracking-tight">Add Inventory Item</h1>
+                            <p className="text-muted-foreground">Create a new item in your inventory</p>
+                        </div>
+                    </div>
                 </CardHeader>
                 <CardContent>
                     <form onSubmit={handleSubmit} className="space-y-6">
                         <div className="grid gap-4">
-                            <div className="grid gap-2">
+                            <div className="grid gap-2 flex flex-col">
                                 <Label htmlFor="name">Item Name *</Label>
-                                <Input
-                                    id="name"
-                                    value={formData.name}
-                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                                    placeholder="e.g., LED Bulb, Steel Plate"
-                                    required
-                                />
+                                <Popover open={openCombobox} onOpenChange={setOpenCombobox}>
+                                    <PopoverTrigger asChild>
+                                        <Button
+                                            variant="outline"
+                                            role="combobox"
+                                            aria-expanded={openCombobox}
+                                            className="justify-between"
+                                        >
+                                            {formData.name || "Select or type item name..."}
+                                            <ChevronsUpDown className="ml-2 h-4 w-4 shrink-0 opacity-50" />
+                                        </Button>
+                                    </PopoverTrigger>
+                                    <PopoverContent className="p-0" align="start">
+                                        <Command>
+                                            <CommandInput
+                                                placeholder="Search item name..."
+                                                value={formData.name}
+                                                onValueChange={(value) => {
+                                                    setFormData({ ...formData, name: value })
+                                                }}
+                                            />
+                                            <CommandList>
+                                                <CommandEmpty>
+                                                    <div className="p-2 text-sm text-muted-foreground">
+                                                        No suggestions found. Type to create new.
+                                                    </div>
+                                                </CommandEmpty>
+                                                <CommandGroup heading="Suggestions">
+                                                    {itemSuggestions?.map((suggestion) => (
+                                                        <CommandItem
+                                                            key={suggestion}
+                                                            value={suggestion}
+                                                            onSelect={(currentValue) => {
+                                                                setFormData({ ...formData, name: currentValue })
+                                                                setOpenCombobox(false)
+                                                            }}
+                                                        >
+                                                            <Check
+                                                                className={cn(
+                                                                    "mr-2 h-4 w-4",
+                                                                    formData.name === suggestion ? "opacity-100" : "opacity-0"
+                                                                )}
+                                                            />
+                                                            {suggestion}
+                                                        </CommandItem>
+                                                    ))}
+                                                </CommandGroup>
+                                            </CommandList>
+                                        </Command>
+                                    </PopoverContent>
+                                </Popover>
+                                <p className="text-xs text-muted-foreground">
+                                    Type to create a new item name or select from suggestions
+                                </p>
                             </div>
 
                             <div className="grid gap-2">
