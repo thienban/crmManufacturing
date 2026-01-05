@@ -33,10 +33,16 @@ export default function ProjectDetailPage() {
         },
     })
 
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<{
+        title: string
+        customer: string
+        status: 'lead' | 'discovery' | 'proposal' | 'production' | 'delivery' | 'completed'
+        deadline: string
+        value: number | ''
+    }>({
         title: '',
         customer: '',
-        status: '' as 'lead' | 'discovery' | 'proposal' | 'production' | 'delivery' | 'completed',
+        status: 'lead',
         deadline: '',
         value: 0,
     })
@@ -50,7 +56,7 @@ export default function ProjectDetailPage() {
             setFormData({
                 title: project.title || '',
                 customer: customerId || '',
-                status: project.status || 'lead',
+                status: (project.status as any) || 'lead',
                 deadline: project.deadline ? new Date(project.deadline).toISOString().split('T')[0] : '',
                 value: project.value || 0,
             })
@@ -63,6 +69,8 @@ export default function ProjectDetailPage() {
         updateMutation.mutate({
             id: projectId,
             ...formData,
+            status: formData.status as any,
+            value: Number(formData.value) || 0,
             deadline: formData.deadline || undefined,
         })
     }
@@ -187,7 +195,10 @@ export default function ProjectDetailPage() {
                                         id="value"
                                         type="number"
                                         value={formData.value}
-                                        onChange={(e) => setFormData({ ...formData, value: parseFloat(e.target.value) || 0 })}
+                                        onChange={(e) => {
+                                            const val = e.target.value
+                                            setFormData({ ...formData, value: val === '' ? '' : parseFloat(val) })
+                                        }}
                                     />
                                 </div>
                             </div>

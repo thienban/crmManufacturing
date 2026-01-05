@@ -13,7 +13,14 @@ import { useState } from 'react'
 
 export default function NewInventoryItemPage() {
     const router = useRouter()
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<{
+        name: string
+        description: string
+        quantity: number | ''
+        unit: string
+        minQuantity: number | ''
+        location: string
+    }>({
         name: '',
         description: '',
         quantity: 0,
@@ -33,7 +40,11 @@ export default function NewInventoryItemPage() {
 
     const handleSubmit = (e: React.FormEvent) => {
         e.preventDefault()
-        createMutation.mutate(formData)
+        createMutation.mutate({
+            ...formData,
+            quantity: Number(formData.quantity) || 0,
+            minQuantity: Number(formData.minQuantity) || 0,
+        })
     }
 
     return (
@@ -87,7 +98,13 @@ export default function NewInventoryItemPage() {
                                         type="number"
                                         min="0"
                                         value={formData.quantity}
-                                        onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 0 })}
+                                        onChange={(e) => {
+                                            const value = e.target.value
+                                            setFormData({
+                                                ...formData,
+                                                quantity: value === '' ? '' : parseInt(value)
+                                            })
+                                        }}
                                         required
                                     />
                                 </div>
@@ -111,7 +128,13 @@ export default function NewInventoryItemPage() {
                                         type="number"
                                         min="0"
                                         value={formData.minQuantity}
-                                        onChange={(e) => setFormData({ ...formData, minQuantity: parseInt(e.target.value) || 0 })}
+                                        onChange={(e) => {
+                                            const value = e.target.value
+                                            setFormData({
+                                                ...formData,
+                                                minQuantity: value === '' ? '' : parseInt(value)
+                                            })
+                                        }}
                                     />
                                     <p className="text-xs text-muted-foreground">
                                         You'll be alerted when stock falls below this level
