@@ -3,7 +3,7 @@
 import Link from 'next/link'
 import { usePathname, useRouter } from 'next/navigation'
 import { cn } from '@/lib/utils'
-import { LayoutDashboard, Users, FolderKanban, Factory, Calendar, LogOut } from 'lucide-react'
+import { LayoutDashboard, Users, FolderKanban, Factory, Calendar, LogOut, Package } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { toast } from 'sonner'
 
@@ -32,6 +32,11 @@ const navigation = [
         title: 'Production',
         url: '/production',
         icon: Factory,
+    },
+    {
+        title: 'Inventory',
+        url: '/inventory',
+        icon: Package,
     },
 ]
 

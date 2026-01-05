@@ -20,6 +20,23 @@ export default function ProductionPage() {
     const { data: orders } = trpc.production.getAll.useQuery()
     const { data: suppliers } = trpc.suppliers.getAll.useQuery()
 
+    const mapStatus = (status: string) => {
+        switch (status) {
+            case 'draft':
+                return 'Draft'
+            case 'sent':
+                return 'Sent'
+            case 'in_production':
+                return 'In Production'
+            case 'shipped':
+                return 'Shipped'
+            case 'received':
+                return 'Received'
+            default:
+                return 'Unknown'
+        }
+    }
+
     return (
         <div className="flex flex-col h-full space-y-4">
             <div>
@@ -64,7 +81,7 @@ export default function ProductionPage() {
                                             <TableRow key={order.id}>
                                                 <TableCell className="font-medium">
                                                     <Link href={`/production/orders/${order.id}`} className="hover:underline inline-flex items-center">
-                                                        <Badge variant="outline" className="mr-2">{order.status}</Badge>
+                                                        <Badge variant="outline" className="mr-2">{mapStatus(order.status)}</Badge>
                                                     </Link>
                                                 </TableCell>
                                                 <TableCell>

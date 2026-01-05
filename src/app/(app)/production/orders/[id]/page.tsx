@@ -33,12 +33,18 @@ export default function ProductionOrderDetailPage() {
         },
     })
 
-    const [formData, setFormData] = useState({
+    const [formData, setFormData] = useState<{
+        project: string
+        supplier: string
+        status: 'draft' | 'sent' | 'in_production' | 'shipped' | 'received'
+        expectedDelivery: string
+        items: Array<{ name: string; description: string; quantity: number | ''; price: number | '' }>
+    }>({
         project: '',
         supplier: '',
-        status: '' as 'draft' | 'sent' | 'in_production' | 'shipped' | 'received',
+        status: 'draft',
         expectedDelivery: '',
-        items: [] as Array<{ name: string; description: string; quantity: number; price: number }>,
+        items: [],
     })
 
     const handleEdit = () => {
@@ -54,7 +60,7 @@ export default function ProductionOrderDetailPage() {
             setFormData({
                 project: projectId || '',
                 supplier: supplierId || '',
-                status: order.status || 'draft',
+                status: (order.status as any) || 'draft',
                 expectedDelivery: order.expectedDelivery ? new Date(order.expectedDelivery).toISOString().split('T')[0] : '',
                 items: (order.items || []).map(item => ({
                     name: item.name,
@@ -72,6 +78,12 @@ export default function ProductionOrderDetailPage() {
         updateMutation.mutate({
             id: orderId,
             ...formData,
+            status: formData.status as any,
+            items: formData.items.map(item => ({
+                ...item,
+                quantity: Number(item.quantity) || 0,
+                price: Number(item.price) || 0,
+            })),
             expectedDelivery: formData.expectedDelivery || undefined,
         })
     }
@@ -92,6 +104,7 @@ export default function ProductionOrderDetailPage() {
 
     const updateItem = (index: number, field: string, value: any) => {
         const newItems = [...formData.items]
+        // @ts-ignore
         newItems[index] = { ...newItems[index], [field]: value }
         setFormData({ ...formData, items: newItems })
     }
@@ -260,7 +273,10 @@ export default function ProductionOrderDetailPage() {
                                                             type="number"
                                                             min="1"
                                                             value={item.quantity}
-                                                            onChange={(e) => updateItem(index, 'quantity', parseInt(e.target.value) || 1)}
+                                                            onChange={(e) => {
+                                                                const val = e.target.value
+                                                                updateItem(index, 'quantity', val === '' ? '' : parseInt(val))
+                                                            }}
                                                             required
                                                         />
                                                     </div>
@@ -269,9 +285,12 @@ export default function ProductionOrderDetailPage() {
                                                         <Input
                                                             type="number"
                                                             min="0"
-                                                            step="0.01"
+                                                            step="0.1"
                                                             value={item.price}
-                                                            onChange={(e) => updateItem(index, 'price', parseFloat(e.target.value) || 0)}
+                                                            onChange={(e) => {
+                                                                const val = e.target.value
+                                                                updateItem(index, 'price', val === '' ? '' : parseFloat(val))
+                                                            }}
                                                             required
                                                         />
                                                     </div>

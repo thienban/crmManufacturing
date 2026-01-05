@@ -60,10 +60,67 @@ export const productionRouter = router({
         )
         .mutation(async ({ ctx, input }) => {
             const { id, ...data } = input
-            return await ctx.payload.update({
+
+            // Get the previous order state to check if status changed to 'received'
+            const previousOrder = await ctx.payload.findByID({
+                collection: 'production-orders',
+                id,
+                depth: 0,
+            })
+
+            // Update the order
+            const updatedOrder = await ctx.payload.update({
                 collection: 'production-orders',
                 id,
                 data,
             })
+
+            // If status changed to 'received', update inventory
+            if (data.status === 'received' && previousOrder.status !== 'received' && updatedOrder.items) {
+                for (const item of updatedOrder.items) {
+                    try {
+                        // Try to find existing inventory item by name
+                        const existingInventory = await ctx.payload.find({
+                            collection: 'inventory',
+                            where: {
+                                name: {
+                                    equals: item.name,
+                                },
+                            },
+                            limit: 1,
+                        })
+
+                        if (existingInventory.docs.length > 0) {
+                            // Update existing inventory
+                            const inventoryItem = existingInventory.docs[0]
+                            await ctx.payload.update({
+                                collection: 'inventory',
+                                id: inventoryItem.id,
+                                data: {
+                                    quantity: (inventoryItem.quantity || 0) + (item.quantity || 0),
+                                    lastRestocked: new Date().toISOString(),
+                                },
+                            })
+                        } else {
+                            // Create new inventory item
+                            await ctx.payload.create({
+                                collection: 'inventory',
+                                data: {
+                                    name: item.name,
+                                    description: item.description || '',
+                                    quantity: item.quantity || 0,
+                                    unit: 'pcs',
+                                    minQuantity: 0,
+                                    lastRestocked: new Date().toISOString(),
+                                },
+                            })
+                        }
+                    } catch (error) {
+                        console.error(`Failed to update inventory for item ${item.name}:`, error)
+                    }
+                }
+            }
+
+            return updatedOrder
         }),
 })
