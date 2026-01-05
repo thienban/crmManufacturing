@@ -1,0 +1,156 @@
+'use client'
+
+import { trpc } from '@/trpc/client'
+import { Button } from '@/components/ui/button'
+import { Card, CardContent, CardHeader, CardTitle } from '@/components/ui/card'
+import { Input } from '@/components/ui/input'
+import { Label } from '@/components/ui/label'
+import { Textarea } from '@/components/ui/textarea'
+import { Loader2, ArrowLeft, Package } from 'lucide-react'
+import Link from 'next/link'
+import { useRouter } from 'next/navigation'
+import { useState } from 'react'
+
+export default function NewInventoryItemPage() {
+    const router = useRouter()
+    const [formData, setFormData] = useState({
+        name: '',
+        description: '',
+        quantity: 0,
+        unit: 'pcs',
+        minQuantity: 0,
+        location: '',
+    })
+
+    const createMutation = trpc.inventory.create.useMutation({
+        onSuccess: () => {
+            router.push('/inventory')
+        },
+        onError: (error) => {
+            console.error('Failed to create inventory item:', error)
+        },
+    })
+
+    const handleSubmit = (e: React.FormEvent) => {
+        e.preventDefault()
+        createMutation.mutate(formData)
+    }
+
+    return (
+        <div className="space-y-6">
+            <div className="flex items-center space-x-4">
+                <Button variant="outline" size="icon" asChild>
+                    <Link href="/inventory">
+                        <ArrowLeft className="h-4 w-4" />
+                    </Link>
+                </Button>
+                <div>
+                    <h1 className="text-3xl font-bold tracking-tight">Add Inventory Item</h1>
+                    <p className="text-muted-foreground">Create a new item in your inventory</p>
+                </div>
+            </div>
+
+            <Card>
+                <CardHeader>
+                    <CardTitle>Item Details</CardTitle>
+                </CardHeader>
+                <CardContent>
+                    <form onSubmit={handleSubmit} className="space-y-6">
+                        <div className="grid gap-4">
+                            <div className="grid gap-2">
+                                <Label htmlFor="name">Item Name *</Label>
+                                <Input
+                                    id="name"
+                                    value={formData.name}
+                                    onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                                    placeholder="e.g., LED Bulb, Steel Plate"
+                                    required
+                                />
+                            </div>
+
+                            <div className="grid gap-2">
+                                <Label htmlFor="description">Description</Label>
+                                <Textarea
+                                    id="description"
+                                    value={formData.description}
+                                    onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+                                    placeholder="Optional description of the item"
+                                    rows={3}
+                                />
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="grid gap-2">
+                                    <Label htmlFor="quantity">Initial Quantity *</Label>
+                                    <Input
+                                        id="quantity"
+                                        type="number"
+                                        min="0"
+                                        value={formData.quantity}
+                                        onChange={(e) => setFormData({ ...formData, quantity: parseInt(e.target.value) || 0 })}
+                                        required
+                                    />
+                                </div>
+
+                                <div className="grid gap-2">
+                                    <Label htmlFor="unit">Unit of Measurement</Label>
+                                    <Input
+                                        id="unit"
+                                        value={formData.unit}
+                                        onChange={(e) => setFormData({ ...formData, unit: e.target.value })}
+                                        placeholder="e.g., pcs, kg, m"
+                                    />
+                                </div>
+                            </div>
+
+                            <div className="grid grid-cols-2 gap-4">
+                                <div className="flex flex-col gap-2">
+                                    <Label htmlFor="minQuantity">Minimum Quantity (Alert Threshold)</Label>
+                                    <Input
+                                        id="minQuantity"
+                                        type="number"
+                                        min="0"
+                                        value={formData.minQuantity}
+                                        onChange={(e) => setFormData({ ...formData, minQuantity: parseInt(e.target.value) || 0 })}
+                                    />
+                                    <p className="text-xs text-muted-foreground">
+                                        You'll be alerted when stock falls below this level
+                                    </p>
+                                </div>
+
+                                <div className="flex flex-col gap-2">
+                                    <Label htmlFor="location">Storage Location</Label>
+                                    <Input
+                                        id="location"
+                                        value={formData.location}
+                                        onChange={(e) => setFormData({ ...formData, location: e.target.value })}
+                                        placeholder="e.g., Warehouse A, Shelf 3"
+                                    />
+                                </div>
+                            </div>
+                        </div>
+
+                        <div className="flex justify-end space-x-4">
+                            <Button type="button" variant="outline" onClick={() => router.push('/inventory')}>
+                                Cancel
+                            </Button>
+                            <Button type="submit" disabled={createMutation.isPending}>
+                                {createMutation.isPending ? (
+                                    <>
+                                        <Loader2 className="mr-2 h-4 w-4 animate-spin" />
+                                        Creating...
+                                    </>
+                                ) : (
+                                    <>
+                                        <Package className="mr-2 h-4 w-4" />
+                                        Create Item
+                                    </>
+                                )}
+                            </Button>
+                        </div>
+                    </form>
+                </CardContent>
+            </Card>
+        </div >
+    )
+}

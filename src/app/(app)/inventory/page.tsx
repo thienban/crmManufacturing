@@ -7,9 +7,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '@
 import { Badge } from '@/components/ui/badge'
 import { Loader2, Package, AlertTriangle, TrendingUp, Plus } from 'lucide-react'
 import Link from 'next/link'
+import { useRouter } from 'next/navigation'
 import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs'
 
 export default function InventoryPage() {
+    const router = useRouter()
     const { data: inventory, isLoading } = trpc.inventory.getAll.useQuery()
     const { data: incomingStock } = trpc.inventory.getIncomingStock.useQuery()
 
@@ -109,13 +111,16 @@ export default function InventoryPage() {
                                             <TableHead>Unit</TableHead>
                                             <TableHead>Location</TableHead>
                                             <TableHead>Status</TableHead>
-                                            <TableHead className="text-right">Actions</TableHead>
                                         </TableRow>
                                     </TableHeader>
                                     <TableBody>
                                         {inventory.map((item: any) => (
                                             <TableRow key={item.id}>
-                                                <TableCell className="font-medium">{item.name}</TableCell>
+                                                <TableCell className="font-medium">
+                                                    <Link href={`/inventory/${item.id}`} className="hover:underline inline-flex items-center">
+                                                        {item.name}
+                                                    </Link>
+                                                </TableCell>
                                                 <TableCell>{item.description || '-'}</TableCell>
                                                 <TableCell className="text-right">{item.quantity}</TableCell>
                                                 <TableCell>{item.unit || 'pcs'}</TableCell>
@@ -126,11 +131,6 @@ export default function InventoryPage() {
                                                     ) : (
                                                         <Badge variant="default">In Stock</Badge>
                                                     )}
-                                                </TableCell>
-                                                <TableCell className="text-right">
-                                                    <Button variant="ghost" size="sm" asChild>
-                                                        <Link href={`/inventory/${item.id}`}>View</Link>
-                                                    </Button>
                                                 </TableCell>
                                             </TableRow>
                                         ))}
