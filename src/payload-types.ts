@@ -262,6 +262,15 @@ export interface Inventory {
   minQuantity?: number | null;
   location?: string | null;
   lastRestocked?: string | null;
+  stockMovements?:
+    | {
+        type: 'resell' | 'manufactured' | 'adjustment';
+        quantity: number;
+        date: string;
+        notes?: string | null;
+        id?: string | null;
+      }[]
+    | null;
   notes?: {
     root: {
       type: string;
@@ -473,6 +482,15 @@ export interface InventorySelect<T extends boolean = true> {
   minQuantity?: T;
   location?: T;
   lastRestocked?: T;
+  stockMovements?:
+    | T
+    | {
+        type?: T;
+        quantity?: T;
+        date?: T;
+        notes?: T;
+        id?: T;
+      };
   notes?: T;
   updatedAt?: T;
   createdAt?: T;
