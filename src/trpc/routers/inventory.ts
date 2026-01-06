@@ -182,4 +182,44 @@ export const inventoryRouter = router({
                 },
             })
         }),
+    removeStock: publicProcedure
+        .input(
+            z.object({
+                id: z.string(),
+                quantity: z.number().min(1),
+                type: z.enum(['resell', 'manufactured', 'adjustment']),
+                date: z.string(),
+                notes: z.string().optional(),
+            })
+        )
+        .mutation(async ({ ctx, input }) => {
+            const item = await ctx.payload.findByID({
+                collection: 'inventory',
+                id: input.id,
+            })
+
+            const newQuantity = (item.quantity || 0) - input.quantity
+
+            if (newQuantity < 0) {
+                throw new Error('Insufficient stock')
+            }
+
+            const movement = {
+                type: input.type,
+                quantity: input.quantity,
+                date: input.date,
+                notes: input.notes,
+            }
+
+            const currentMovements = (item.stockMovements as any[]) || []
+
+            return await ctx.payload.update({
+                collection: 'inventory',
+                id: input.id,
+                data: {
+                    quantity: newQuantity,
+                    stockMovements: [...currentMovements, movement],
+                },
+            })
+        }),
 })

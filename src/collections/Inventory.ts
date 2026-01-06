@@ -50,6 +50,39 @@ export const Inventory: CollectionConfig = {
             label: 'Last Restocked Date',
         },
         {
+            name: 'stockMovements',
+            type: 'array',
+            label: 'Stock Movements',
+            fields: [
+                {
+                    name: 'type',
+                    type: 'select',
+                    options: [
+                        { label: 'Resell', value: 'resell' },
+                        { label: 'Manufactured', value: 'manufactured' },
+                        { label: 'Adjustment', value: 'adjustment' },
+                    ],
+                    required: true,
+                },
+                {
+                    name: 'quantity',
+                    type: 'number',
+                    required: true,
+                    min: 0,
+                },
+                {
+                    name: 'date',
+                    type: 'date',
+                    required: true,
+                    defaultValue: () => new Date().toISOString(),
+                },
+                {
+                    name: 'notes',
+                    type: 'text',
+                }
+            ]
+        },
+        {
             name: 'notes',
             type: 'richText',
             label: 'Notes',
