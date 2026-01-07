@@ -28,6 +28,12 @@ export const projectsRouter = router({
                 status: z.enum(['lead', 'discovery', 'proposal', 'production', 'delivery', 'completed']),
                 deadline: z.string().optional(),
                 value: z.number().optional(),
+                items: z.array(z.object({
+                    name: z.string(),
+                    description: z.string().optional(),
+                    quantity: z.number(),
+                    price: z.number(),
+                })).optional(),
             })
         )
         .mutation(async ({ ctx, input }) => {
@@ -63,6 +69,12 @@ export const projectsRouter = router({
                 status: z.enum(['lead', 'discovery', 'proposal', 'production', 'delivery', 'completed']).optional(),
                 deadline: z.string().optional(),
                 value: z.number().optional(),
+                items: z.array(z.object({
+                    name: z.string(),
+                    description: z.string().optional(),
+                    quantity: z.number(),
+                    price: z.number(),
+                })).optional(),
             })
         )
         .mutation(async ({ ctx, input }) => {

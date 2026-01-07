@@ -14,13 +14,16 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { EditItemsSheet } from '@/components/projects/EditItemsSheet'
 import { useState } from 'react'
+
 
 export default function ProjectDetailPage() {
     const params = useParams()
     const projectId = params.id as string
     const router = useRouter()
     const [open, setOpen] = useState(false)
+    const [itemsSheetOpen, setItemsSheetOpen] = useState(false)
 
     const { data: project, isLoading } = trpc.projects.getById.useQuery({ id: projectId })
     const { data: customers } = trpc.customers.getAll.useQuery()
@@ -225,6 +228,7 @@ export default function ProjectDetailPage() {
             <Tabs defaultValue="overview" className="space-y-4">
                 <TabsList>
                     <TabsTrigger value="overview">Overview</TabsTrigger>
+                    <TabsTrigger value="quotation">Quotation</TabsTrigger>
                     <TabsTrigger value="production">Production</TabsTrigger>
                 </TabsList>
 
@@ -235,7 +239,7 @@ export default function ProjectDetailPage() {
                                 <CardTitle>Description</CardTitle>
                             </CardHeader>
                             <CardContent>
-                                <p>{project.description || 'No description provided.'}</p>
+                                <p>{typeof project.description === 'string' ? project.description : 'Description content (Rich Text)'}</p>
                             </CardContent>
                         </Card>
 
@@ -276,6 +280,69 @@ export default function ProjectDetailPage() {
                     </div>
                 </TabsContent>
 
+                <TabsContent value="quotation">
+                    <Card>
+                        <CardHeader className="flex flex-row items-center justify-between">
+                            <div>
+                                <CardTitle>Quotation</CardTitle>
+                                <CardDescription>
+                                    Add price and quantity for each item.
+                                </CardDescription>
+                            </div>
+                            <Button onClick={() => setItemsSheetOpen(true)} size="sm" variant="outline">
+                                <Pencil className="mr-2 h-4 w-4" />
+                                Manage Quotation
+                            </Button>
+                        </CardHeader>
+                        <CardContent>
+                            {project.items && project.items.length > 0 ? (
+                                <div className="rounded-md border">
+                                    <table className="w-full text-sm">
+                                        <thead>
+                                            <tr className="border-b bg-muted/50">
+                                                <th className="p-3 text-left font-medium">Item</th>
+                                                <th className="p-3 text-right font-medium">Quantity</th>
+                                                <th className="p-3 text-right font-medium">Price</th>
+                                                <th className="p-3 text-right font-medium">Total</th>
+                                            </tr>
+                                        </thead>
+                                        <tbody>
+                                            {project.items.map((item: any, i: number) => (
+                                                <tr key={item.id || i} className="border-b last:border-0 hover:bg-muted/5">
+                                                    <td className="p-3">
+                                                        <div className="font-medium">{item.name}</div>
+                                                        {item.description && (
+                                                            <div className="text-xs text-muted-foreground">{item.description}</div>
+                                                        )}
+                                                    </td>
+                                                    <td className="p-3 text-right">{item.quantity}</td>
+                                                    <td className="p-3 text-right">${item.price?.toLocaleString()}</td>
+                                                    <td className="p-3 text-right pl-6 font-medium">
+                                                        ${((item.quantity || 0) * (item.price || 0)).toLocaleString()}
+                                                    </td>
+                                                </tr>
+                                            ))}
+                                            <tr className="bg-muted/50 font-bold">
+                                                <td className="p-3" colSpan={3}>Total Value</td>
+                                                <td className="p-3 text-right">
+                                                    ${project.items.reduce((acc: number, item: any) => acc + ((item.quantity || 0) * (item.price || 0)), 0).toLocaleString()}
+                                                </td>
+                                            </tr>
+                                        </tbody>
+                                    </table>
+                                </div>
+                            ) : (
+                                <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground border-2 border-dashed rounded-lg">
+                                    <p className="mb-2">No items added to this project yet.</p>
+                                    <Button onClick={() => setItemsSheetOpen(true)} variant="outline">
+                                        Add First Item
+                                    </Button>
+                                </div>
+                            )}
+                        </CardContent>
+                    </Card>
+                </TabsContent>
+
                 <TabsContent value="production">
                     <Card>
                         <CardHeader>
@@ -296,6 +363,13 @@ export default function ProjectDetailPage() {
                     </Card>
                 </TabsContent>
             </Tabs>
+
+            <EditItemsSheet
+                open={itemsSheetOpen}
+                onOpenChange={setItemsSheetOpen}
+                projectId={projectId}
+                initialItems={project.items || []}
+            />
         </div>
     )
 }
