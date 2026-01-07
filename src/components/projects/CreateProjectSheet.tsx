@@ -1,6 +1,6 @@
 'use client'
 
-import { useForm } from 'react-hook-form'
+import { useForm, useFieldArray } from 'react-hook-form'
 import { zodResolver } from '@hookform/resolvers/zod'
 import { z } from 'zod'
 import { trpc } from '@/trpc/client'
@@ -31,7 +31,7 @@ import {
 } from '@/components/ui/select'
 import { toast } from 'sonner'
 import { useState } from 'react'
-import { Plus } from 'lucide-react'
+import { Plus, Trash2 } from 'lucide-react'
 
 const projectSchema = z.object({
     title: z.string().min(1, 'Title is required'),
@@ -39,6 +39,12 @@ const projectSchema = z.object({
     status: z.enum(['lead', 'discovery', 'proposal', 'production', 'delivery', 'completed']),
     deadline: z.string().optional(),
     value: z.coerce.number().optional(),
+    items: z.array(z.object({
+        name: z.string().min(1, 'Item name is required'),
+        description: z.string().optional(),
+        quantity: z.coerce.number().min(1, 'Quantity must be at least 1'),
+        price: z.coerce.number().min(0, 'Price must be non-negative'),
+    })),
 })
 
 type ProjectFormValues = z.infer<typeof projectSchema>
@@ -50,12 +56,19 @@ export function CreateProjectSheet() {
     const { data: customers } = trpc.customers.getAll.useQuery()
 
     const form = useForm<ProjectFormValues>({
-        resolver: zodResolver(projectSchema),
+        resolver: zodResolver(projectSchema) as any,
         defaultValues: {
             status: 'lead',
             value: undefined,
+            items: [],
         },
     })
+
+    // Add useFieldArray specifically for items
+    const { fields, append, remove } = useFieldArray({
+        control: form.control,
+        name: "items",
+    });
 
     const createProject = trpc.projects.create.useMutation({
         onSuccess: () => {
@@ -72,7 +85,10 @@ export function CreateProjectSheet() {
     })
 
     function onSubmit(data: ProjectFormValues) {
-        createProject.mutate(data)
+        createProject.mutate({
+            ...data,
+            items: data.items || []
+        })
     }
 
     return (
@@ -83,7 +99,7 @@ export function CreateProjectSheet() {
                     New Project
                 </Button>
             </SheetTrigger>
-            <SheetContent>
+            <SheetContent className="overflow-y-auto min-w-[400px] sm:min-w-[600px] sm:max-w-[800px] sm:w-full">
                 <SheetHeader>
                     <SheetTitle>New Project</SheetTitle>
                     <SheetDescription>
@@ -154,32 +170,130 @@ export function CreateProjectSheet() {
                                 </FormItem>
                             )}
                         />
-                        <FormField
-                            control={form.control}
-                            name="deadline"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Deadline</FormLabel>
-                                    <FormControl>
-                                        <Input type="date" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
+                        <div className="flex gap-4">
+                            <FormField
+                                control={form.control}
+                                name="deadline"
+                                render={({ field }) => (
+                                    <FormItem className="flex-1">
+                                        <FormLabel>Deadline</FormLabel>
+                                        <FormControl>
+                                            <Input type="date" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                            <FormField
+                                control={form.control}
+                                name="value"
+                                render={({ field }) => (
+                                    <FormItem className="flex-1">
+                                        <FormLabel>Value ($)</FormLabel>
+                                        <FormControl>
+                                            <Input type="number" placeholder="5000" {...field} />
+                                        </FormControl>
+                                        <FormMessage />
+                                    </FormItem>
+                                )}
+                            />
+                        </div>
+
+                        <div className="space-y-4">
+                            <div className="flex items-center justify-between">
+                                <h3 className="text-sm font-medium">Sold Items</h3>
+                                <Button
+                                    type="button"
+                                    variant="outline"
+                                    size="sm"
+                                    onClick={() => append({ name: '', quantity: 1, price: 0 })}
+                                >
+                                    <Plus className="mr-2 h-3 w-3" />
+                                    Add Item
+                                </Button>
+                            </div>
+
+                            {fields.map((field, index) => (
+                                <div key={field.id} className="grid grid-cols-12 gap-2 items-end border p-3 rounded-md">
+                                    <div className="col-span-12 sm:col-span-5">
+                                        <FormField
+                                            control={form.control}
+                                            name={`items.${index}.name`}
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-xs">Item Name</FormLabel>
+                                                    <FormControl>
+                                                        <Input placeholder="e.g. Service" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+                                    <div className="col-span-4 sm:col-span-2">
+                                        <FormField
+                                            control={form.control}
+                                            name={`items.${index}.quantity`}
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-xs">Qty</FormLabel>
+                                                    <FormControl>
+                                                        <Input type="number" min="1" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+                                    <div className="col-span-4 sm:col-span-3">
+                                        <FormField
+                                            control={form.control}
+                                            name={`items.${index}.price`}
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormLabel className="text-xs">Price ($)</FormLabel>
+                                                    <FormControl>
+                                                        <Input type="number" min="0" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+                                    <div className="col-span-4 sm:col-span-2 flex justify-end pb-2">
+                                        <Button
+                                            type="button"
+                                            variant="ghost"
+                                            size="icon"
+                                            className="h-8 w-8 text-destructive"
+                                            onClick={() => remove(index)}
+                                        >
+                                            <Trash2 className="h-4 w-4" />
+                                        </Button>
+                                    </div>
+                                    <div className="col-span-12">
+                                        <FormField
+                                            control={form.control}
+                                            name={`items.${index}.description`}
+                                            render={({ field }) => (
+                                                <FormItem>
+                                                    <FormControl>
+                                                        <Input placeholder="Description (optional)" className="h-8 text-xs" {...field} />
+                                                    </FormControl>
+                                                    <FormMessage />
+                                                </FormItem>
+                                            )}
+                                        />
+                                    </div>
+                                </div>
+                            ))}
+                            {fields.length === 0 && (
+                                <div className="text-center py-4 text-sm text-muted-foreground border border-dashed rounded-md">
+                                    No items added yet.
+                                </div>
                             )}
-                        />
-                        <FormField
-                            control={form.control}
-                            name="value"
-                            render={({ field }) => (
-                                <FormItem>
-                                    <FormLabel>Value ($)</FormLabel>
-                                    <FormControl>
-                                        <Input type="number" placeholder="5000" {...field} />
-                                    </FormControl>
-                                    <FormMessage />
-                                </FormItem>
-                            )}
-                        />
+                        </div>
+
                         <Button type="submit" className="w-full" disabled={createProject.isPending}>
                             {createProject.isPending ? 'Creating...' : 'Create Project'}
                         </Button>

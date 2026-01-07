@@ -45,5 +45,34 @@ export const Projects: CollectionConfig = {
             type: 'number',
             label: 'Project Value',
         },
+        {
+            name: 'items',
+            type: 'array',
+            label: 'Sold Items',
+            fields: [
+                {
+                    name: 'name',
+                    type: 'text',
+                    required: true,
+                },
+                {
+                    name: 'description',
+                    type: 'text',
+                },
+                {
+                    name: 'quantity',
+                    type: 'number',
+                    required: true,
+                    min: 1,
+                },
+                {
+                    name: 'price',
+                    type: 'number',
+                    required: true,
+                    min: 0,
+                    label: 'Selling Price',
+                },
+            ],
+        },
     ],
 }

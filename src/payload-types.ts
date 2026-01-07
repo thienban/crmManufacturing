@@ -205,6 +205,15 @@ export interface Project {
     [k: string]: unknown;
   } | null;
   value?: number | null;
+  items?:
+    | {
+        name: string;
+        description?: string | null;
+        quantity: number;
+        price: number;
+        id?: string | null;
+      }[]
+    | null;
   updatedAt: string;
   createdAt: string;
 }
@@ -428,6 +437,15 @@ export interface ProjectsSelect<T extends boolean = true> {
   deadline?: T;
   description?: T;
   value?: T;
+  items?:
+    | T
+    | {
+        name?: T;
+        description?: T;
+        quantity?: T;
+        price?: T;
+        id?: T;
+      };
   updatedAt?: T;
   createdAt?: T;
 }
