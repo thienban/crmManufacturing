@@ -48,6 +48,97 @@ export const inventoryRouter = router({
         return inventory.docs
     }),
 
+    checkStockAvailability: publicProcedure
+        .input(z.object({
+            items: z.array(z.object({
+                name: z.string(),
+                quantity: z.number(),
+            }))
+        }))
+        .query(async ({ ctx, input }) => {
+            const results = []
+
+            for (const item of input.items) {
+                // Find inventory item by name
+                const inventoryItems = await ctx.payload.find({
+                    collection: 'inventory',
+                    where: {
+                        name: {
+                            equals: item.name,
+                        },
+                    },
+                    limit: 1,
+                })
+
+                const inventoryItem = inventoryItems.docs[0]
+                const inStock = inventoryItem ? (inventoryItem.quantity || 0) : 0
+
+                // Find pending orders for this item
+                const pendingOrders = await ctx.payload.find({
+                    collection: 'production-orders',
+                    where: {
+                        and: [
+                            {
+                                'items.name': {
+                                    equals: item.name,
+                                },
+                            },
+                            {
+                                status: {
+                                    not_equals: 'received',
+                                },
+                            },
+                        ],
+                    },
+                    depth: 0,
+                })
+
+                let onOrder = 0
+                const linkedOrders: any[] = []
+
+                if (pendingOrders.docs) {
+                    for (const order of pendingOrders.docs) {
+                        const orderItem = (order.items as any[])?.find((i: any) => i.name === item.name)
+                        if (orderItem) {
+                            const qty = orderItem.quantity || 0
+                            onOrder += qty
+                            linkedOrders.push({
+                                id: order.id,
+                                status: order.status,
+                                quantity: qty,
+                                date: order.createdAt,
+                            })
+                        }
+                    }
+                }
+
+                const totalAvailable = inStock + onOrder
+                const missing = Math.max(0, item.quantity - inStock) // Missing strictly based on what is physically in stock for immediate use? 
+                // Or missing based on total available? usually "Buy Missing" implies what we need to buy.
+                // If we have 0 in stock, need 10, and have 10 on order => Missing is 10 (immediate) but maybe 0 (planned).
+                // For now, let's keep "missing" as "immediate deficit" but show "onOrder" for context so user knows if they need to buy MORE.
+
+                let status: 'ok' | 'low' | 'out' = 'ok'
+                if (inStock === 0) {
+                    status = 'out'
+                } else if (inStock < item.quantity) {
+                    status = 'low'
+                }
+
+                results.push({
+                    name: item.name,
+                    required: item.quantity,
+                    inStock,
+                    onOrder,
+                    linkedOrders,
+                    missing,
+                    status,
+                })
+            }
+
+            return results
+        }),
+
     getIncomingStock: publicProcedure.query(async ({ ctx }) => {
         // Get all orders that are not yet received (sent, in_production, shipped)
         const orders = await ctx.payload.find({

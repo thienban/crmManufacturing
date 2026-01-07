@@ -14,6 +14,8 @@ import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, D
 import { Input } from '@/components/ui/input'
 import { Label } from '@/components/ui/label'
 import { Select, SelectContent, SelectItem, SelectTrigger, SelectValue } from '@/components/ui/select'
+import { CheckStockDialog } from '@/components/projects/CheckStockDialog'
+import { ProjectOrdersList } from '@/components/projects/ProjectOrdersList'
 import { EditItemsSheet } from '@/components/projects/EditItemsSheet'
 import { useState } from 'react'
 
@@ -229,7 +231,7 @@ export default function ProjectDetailPage() {
                 <TabsList>
                     <TabsTrigger value="overview">Overview</TabsTrigger>
                     <TabsTrigger value="quotation">Quotation</TabsTrigger>
-                    <TabsTrigger value="production">Production</TabsTrigger>
+                    <TabsTrigger value="order">Orders</TabsTrigger>
                 </TabsList>
 
                 <TabsContent value="overview" className="space-y-4">
@@ -286,13 +288,16 @@ export default function ProjectDetailPage() {
                             <div>
                                 <CardTitle>Quotation</CardTitle>
                                 <CardDescription>
-                                    Add price and quantity for each item.
+                                    Review price and quantity for each item.
                                 </CardDescription>
                             </div>
-                            <Button onClick={() => setItemsSheetOpen(true)} size="sm" variant="outline">
-                                <Pencil className="mr-2 h-4 w-4" />
-                                Manage Quotation
-                            </Button>
+                            <div className="flex gap-2">
+                                <CheckStockDialog items={project.items || []} projectId={projectId} />
+                                <Button onClick={() => setItemsSheetOpen(true)} size="sm" variant="outline">
+                                    <Pencil className="mr-2 h-4 w-4" />
+                                    Manage Quotation
+                                </Button>
+                            </div>
                         </CardHeader>
                         <CardContent>
                             {project.items && project.items.length > 0 ? (
@@ -343,22 +348,16 @@ export default function ProjectDetailPage() {
                     </Card>
                 </TabsContent>
 
-                <TabsContent value="production">
+                <TabsContent value="order">
                     <Card>
                         <CardHeader>
-                            <CardTitle>Production Orders</CardTitle>
+                            <CardTitle>Orders</CardTitle>
                             <CardDescription>
                                 Orders linked to this project.
                             </CardDescription>
                         </CardHeader>
                         <CardContent>
-                            <div className="flex flex-col items-center justify-center py-8 text-center text-muted-foreground">
-                                <Factory className="h-10 w-10 mb-4 opacity-50" />
-                                <p>No production orders found (Feature coming soon).</p>
-                                <Button variant="link" className="mt-2">
-                                    Create Order
-                                </Button>
-                            </div>
+                            <ProjectOrdersList projectId={projectId} />
                         </CardContent>
                     </Card>
                 </TabsContent>
